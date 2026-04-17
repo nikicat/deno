@@ -1,0 +1,66 @@
+name: Release patched Deno
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*nikicat*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: release-${{ matrix.target }}
+
+      - name: Install protoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler cmake
+
+      - name: Build
+        run: cargo build --release --bin deno --locked
+
+      - name: Test
+        run: |
+          cargo test --release --locked -p deno_config
+          cargo test --release --locked -p specs_tests fmt
+
+      - name: Package
+        run: |
+          cd target/release
+          zip -9 deno-${{ matrix.target }}.zip deno
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deno-${{ matrix.target }}
+          path: target/release/deno-${{ matrix.target }}.zip
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
