@@ -31,7 +31,7 @@ jobs:
           sudo apt-get install -y protobuf-compiler cmake
 
       - name: Build
-        run: cargo build --release --bin deno --locked
+        run: cargo build --release --locked --bin deno --bin denort --bin test_server
 
       - name: Test
         run: |
