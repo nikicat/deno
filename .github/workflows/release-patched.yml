@@ -55,6 +55,7 @@ jobs:
       # Skips silently until the R2_* secrets are configured.
       - name: Mirror to R2 for dvm
         if: startsWith(github.ref, 'refs/tags/')
+        continue-on-error: true   # a mirror failure must not block the GitHub release
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
